@@ -385,7 +385,8 @@ minetest.register_node("protector:protect", {
 			local inv = player:get_inventory();
 			inv:add_item("main", ItemStack("protector:protect"));
 			minetest.set_node(pos,{name = "air"});
-			return 
+			protector.count(pos,2); -- update counts after removal
+			return false
 		end
 		return protector.can_dig(1, pos, player:get_player_name(), true, 1)  -- anyone can dig protector until its upgraded!
 	end,
