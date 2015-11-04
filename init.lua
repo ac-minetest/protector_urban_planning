@@ -867,7 +867,13 @@ if minetest.setting_getbool("enable_pvp") and protector.pvp then
 				return true
 			end
 
-			if minetest.is_protected(pos, hitter:get_player_name()) then
+			local hitter_protected = minetest.is_protected(pos, hitter:get_player_name());
+			local player_protected = minetest.is_protected(pos, player:get_player_name());
+			
+			--can hurt: not hitter OR (hitter AND player)
+			--can not hurt: hitter AND (not hitter or not player)
+			
+			if hitter_protected and ((not hitter) or (not player) )then -- attacker can hurt player where he can build or if both cant build
 				return true
 			else
 				return false
