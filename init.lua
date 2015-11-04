@@ -372,7 +372,7 @@ minetest.register_node("protector:protect", {
 	end,
 
 	on_punch = function(pos, node, puncher)
-		if not protector.can_dig(1, pos, puncher:get_player_name(), true, 1) then
+		if not protector.can_dig(1, pos, puncher:get_player_name(), true, 1)  then
 			return
 		end
 		minetest.add_entity(pos, "protector:display")
@@ -380,7 +380,14 @@ minetest.register_node("protector:protect", {
 
 	can_dig = function(pos, player)
 		local meta = minetest.get_meta(pos);
-		return protector.can_dig(1, pos, player:get_player_name(), true, 1) or (meta:get_string("owner") == "") -- anyone can dig protector until its upgraded!
+		local candig = (meta:get_string("owner") == "");
+		if candig then 
+			local inv = player:get_inventory();
+			inv:add_item("main", ItemStack("protector:protect"));
+			minetest.set_node(pos,{name = "air"});
+			return 
+		end
+		return protector.can_dig(1, pos, player:get_player_name(), true, 1)  -- anyone can dig protector until its upgraded!
 	end,
 	
 	after_dig_node = function(pos, oldnode, oldmetadata, digger)
