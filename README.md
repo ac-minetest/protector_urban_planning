@@ -15,3 +15,5 @@ Urban planning features:
 	existing network new network is formed with its own count
 - protector requiring upgrade does not add to protection ( it obstructs it, since it has no owner ), but it can be dug up by anyone.
 - upon upgrade ( paying it with enough mese crystals ) the ownership is assigned to player who completed upgrade
+
+INSTALLATION: extract into directory called "protector" inside minetest mod directory

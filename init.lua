@@ -326,6 +326,7 @@ minetest.register_node("protector:protect", {
 			cost = cost + (count-protector.maxcount+1)*protector.maxcount_price;
 		end
 		
+		cost = math.ceil(cost);
 		meta:set_int("cost",cost);
 
 		meta:set_string("infotext", "Protection (placed by ".. meta:get_string("placer") .. ". Please rightclick to upgrade with cost ".. cost .." or dig it. ");
