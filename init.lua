@@ -238,8 +238,8 @@ function protector.count(pos, mode)
 	local r = 4*protector.radius+2; -- radius 14,  P = protector, PAAABBBPAAABBBP
 	
 	local positions = minetest.find_nodes_in_area(
-		{x = pos.x - r, y = pos.y - r, z = pos.z - r},
-		{x = pos.x + r, y = pos.y + r, z = pos.z + r},
+		{x = pos.x - r, y = pos.y - 0.5*r, z = pos.z - r},
+		{x = pos.x + r, y = pos.y + 0.5*r, z = pos.z + r},
 		{"protector:protect"})
 
 	local meta, p, maxcount, count -- protector count in the neighborhood
@@ -875,7 +875,7 @@ if minetest.setting_getbool("enable_pvp") and protector.pvp then
 			--can hurt: not hitter OR (hitter AND player)
 			--can not hurt: hitter AND (not hitter or not player)
 			
-			if hitter_protected and ((not hitter) or (not player) )then -- attacker can hurt player where he can build or if both cant build
+			if hitter_protected and ((not hitter_protected) or (not player_protected) )then -- attacker can hurt player where he can build or if both cant build
 				return true
 			else
 				return false
