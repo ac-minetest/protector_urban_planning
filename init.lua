@@ -330,6 +330,7 @@ minetest.register_node("protector:protect", {
 		meta:set_int("cost",cost);
 
 		meta:set_string("infotext", "Protection (placed by ".. meta:get_string("placer") .. ". Please rightclick to upgrade with cost ".. cost .." or dig it. ");
+		meta:set_int("upgrade",1);
 		meta:set_string("members", "")
 	end,
 
@@ -380,7 +381,7 @@ minetest.register_node("protector:protect", {
 
 	can_dig = function(pos, player)
 		local meta = minetest.get_meta(pos);
-		local candig = (meta:get_string("owner") == "");
+		local candig = (meta:get_int("upgrade") == 1);
 		if candig then 
 			local inv = player:get_inventory();
 			inv:add_item("main", ItemStack("protector:protect"));
@@ -432,6 +433,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		
 		
 		meta:set_string("owner", player:get_player_name() or "");
+		meta:set_int("upgrade",0);
 		meta:set_string("placer","");
 		local time = os.date("*t");
 		meta:set_string("infotext", "Protection (upgraded by ".. meta:get_string("owner").." at ".. time.month .. "/" .. time.day .. ", " ..time.hour.. ":".. time.min ..":" .. time.sec..")");
