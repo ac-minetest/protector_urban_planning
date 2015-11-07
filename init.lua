@@ -6,7 +6,7 @@ local statspawn = (minetest.setting_get_pos("static_spawnpoint") or {x = 0, y = 
 protector = {}
 protector.mod = "redo"
 protector.radius = (tonumber(minetest.setting_get("protector_radius")) or 3)
-protector.pvp = minetest.setting_getbool("protector_pvp")
+protector.pvp = true -- minetest.setting_getbool("protector_pvp")
 protector.spawn = (tonumber(minetest.setting_get("protector_pvp_spawn")) or 0)
 
 -- luxury settings
@@ -907,7 +907,7 @@ if minetest.setting_getbool("enable_pvp") and protector.pvp then
 			if hitter_can_build or ((not player_can_build) and (not hitter_can_build)) then -- attacker can hurt player where he can build or if both cant build
 				return false -- can hurt
 			else
-				return true
+				return true -- can not hurt
 			end
 
 		end)
