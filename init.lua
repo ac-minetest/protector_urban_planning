@@ -360,7 +360,7 @@ minetest.register_node("protector:protect", {
 			"You will need to upgrade protector to be usable. "..
 			"\n\n Make sure you have " .. cost .. " mese in your inventory. "..
 			"If price is too high dig protector, find a spot farther away and try again. "..
-			"\n\nWARNING: think well before upgrade, it is not refundable.";
+			"\n\nADVICE: try to place protector at least 15 blocks away from large groups of protectors to keep update cost low.";
 			
 			local formspec = "size[4.5,5]"
 			..default.gui_bg..default.gui_bg_img..default.gui_slots..
