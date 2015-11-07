@@ -16,7 +16,7 @@ protector.luxury_radius = 75; -- outside this radius around luxury centers playe
 protector.luxury_border_cost = 4; -- protector placement cost at luxury radius
 protector.luxury_center_cost = 100; -- cost at luxury center
 protector.maxcount = 10; -- allowed count in a group before update cost required
-protector.maxcount_price = 1; -- extra cost for placing protectors per 1 exceeded maxcount
+protector.maxcount_price = 2; -- extra cost for placing protectors per 1 exceeded maxcount
 
 
 protector.get_member_list = function(meta)
@@ -136,7 +136,7 @@ protector.can_dig = function(r, pos, digger, onlyowner, infolevel)
 					minetest.chat_send_player(digger,
 					"This area is owned by " .. owner .. ".")
 					minetest.chat_send_player(digger,
-					"Protection located at: " .. minetest.pos_to_string(pos))
+					"Protection located at: " .. minetest.pos_to_string(pos) .. ", upgrade price " .. meta:get_int("cost"))
 					if members ~= "" then
 						minetest.chat_send_player(digger,
 						"Members: " .. members .. ".")
@@ -323,7 +323,7 @@ minetest.register_node("protector:protect", {
 		end
 		
 		if count>=protector.maxcount then -- extra costs due to exceeded protector count
-			cost = cost + (count-protector.maxcount+1)*protector.maxcount_price;
+			cost = cost + math.pow(count-protector.maxcount+1,2)*protector.maxcount_price;
 		end
 		
 		cost = math.ceil(cost);
