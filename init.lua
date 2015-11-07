@@ -323,8 +323,12 @@ minetest.register_node("protector:protect", {
 			cost = cost + math.ceil(cost);
 		end
 		
-		if count>=protector.maxcount and luxury_dist< 2*protector.luxury_radius then -- extra costs due to exceeded protector count
-			cost = cost + math.pow(count-protector.maxcount+1,2)*protector.maxcount_price;
+		if count>=protector.maxcount then -- extra costs due to exceeded protector count
+			if luxury_dist< 2*protector.luxury_radius then
+				cost = cost + math.pow(count-protector.maxcount+1,2)*protector.maxcount_price;
+			else
+				cost = cost + math.pow(count-protector.maxcount+1)*protector.maxcount_price;
+			end
 		end
 		
 		cost = math.ceil(cost);
