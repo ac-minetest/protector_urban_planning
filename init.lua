@@ -153,7 +153,7 @@ protector.can_dig = function(r, pos, digger, onlyowner, infolevel)
 			minetest.chat_send_player(digger,
 			"This area is owned by " .. owner .. ".")
 			minetest.chat_send_player(digger,
-			"Protection located at: " .. minetest.pos_to_string(pos))
+			"Protection located at: " .. minetest.pos_to_string(pos) .. ", upgrade price " .. meta:get_int("cost"))
 			if members ~= "" then
 				minetest.chat_send_player(digger,
 				"Members: " .. members .. ".")
