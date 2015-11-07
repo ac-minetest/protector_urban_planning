@@ -338,8 +338,9 @@ minetest.register_node("protector:protect", {
 		meta:set_int("cost",cost);
 
 		meta:set_string("infotext", "Protection (placed by ".. meta:get_string("placer") .. ". Please rightclick to upgrade with cost ".. cost .." or dig it. ");
-		meta:set_int("upgrade",1);
+		meta:set_int("upgrade",1);meta:set_int("place_time", minetest.get_gametime());
 		meta:set_string("members", "")
+		return
 	end,
 
 	on_use = function(itemstack, user, pointed_thing)
@@ -389,10 +390,23 @@ minetest.register_node("protector:protect", {
 
 	can_dig = function(pos, player)
 		local meta = minetest.get_meta(pos);
+	
 		local candig = (meta:get_int("upgrade") == 1);
 		local name = player:get_player_name();
-		if not protector.discount[name] then protector.discount[name] = 0 end
+		if candig then 
+			if name~=meta:get_string("placer") then -- non placer can only dig after 5 minutes passed
+				local t = minetest.get_gametime();
+				local t1 = meta:get_int("place_time");
+				if math.abs(t-t1)< 300 then candig = false 
+					minetest.chat_send_player(name," Only placer can dig unupgraded protection before 5 minutes passed.");
+					return false;
+				end
+			end
+			
+		end
+		
 		if meta:get_string("owner") == name then 
+			if not protector.discount[name] then protector.discount[name] = 0 end
 			local cost = meta:get_int("cost");
 			if cost>0 then
 				protector.discount[name] = protector.discount[name] +cost;
@@ -400,14 +414,14 @@ minetest.register_node("protector:protect", {
 			end
 		end
 		
-		if candig then 
+		if candig then -- dig it if it can be digged
 			local inv = player:get_inventory();
 			inv:add_item("main", ItemStack("protector:protect"));
 			minetest.set_node(pos,{name = "air"});
 			protector.count(pos,2); -- update counts after removal
 			return false
 		end
-		return protector.can_dig(1, pos, player:get_player_name(), true, 1)  -- anyone can dig protector until its upgraded!
+		return protector.can_dig(1, pos, player:get_player_name(), true, 1)  
 	end,
 	
 	after_dig_node = function(pos, oldnode, oldmetadata, digger)
