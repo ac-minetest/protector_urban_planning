@@ -13,10 +13,11 @@ protector.spawn = (tonumber(minetest.setting_get("protector_pvp_spawn")) or 0)
 
 protector.luxury_centers = {statspawn} -- simply add points here, for example { spawn, {x=0,y=100,z=0} }
 protector.luxury_radius = 75; -- outside this radius around luxury centers players can place protectors normally without worrying about upgrading
+-- outside 2x this radius players can spam protectors with no extra cost
 protector.luxury_border_cost = 4; -- protector placement cost at luxury radius
 protector.luxury_center_cost = 100; -- cost at luxury center
 protector.maxcount = 10; -- allowed count in a group before update cost required
-protector.maxcount_price = 1; -- extra cost for placing protectors per 1 exceeded maxcount
+protector.maxcount_price = 0.5; -- extra costs parameter for placing protectors
 
 
 protector.get_member_list = function(meta)
@@ -322,7 +323,7 @@ minetest.register_node("protector:protect", {
 			cost = cost + math.ceil(cost);
 		end
 		
-		if count>=protector.maxcount then -- extra costs due to exceeded protector count
+		if count>=protector.maxcount and luxury_dist< 2*protector.luxury_radius then -- extra costs due to exceeded protector count
 			cost = cost + math.pow(count-protector.maxcount+1,2)*protector.maxcount_price;
 		end
 		
