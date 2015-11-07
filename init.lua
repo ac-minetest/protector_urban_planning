@@ -16,7 +16,7 @@ protector.luxury_radius = 75; -- outside this radius around luxury centers playe
 protector.luxury_border_cost = 4; -- protector placement cost at luxury radius
 protector.luxury_center_cost = 100; -- cost at luxury center
 protector.maxcount = 10; -- allowed count in a group before update cost required
-protector.maxcount_price = 2; -- extra cost for placing protectors per 1 exceeded maxcount
+protector.maxcount_price = 1; -- extra cost for placing protectors per 1 exceeded maxcount
 
 
 protector.get_member_list = function(meta)
