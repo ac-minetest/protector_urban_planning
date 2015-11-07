@@ -13,11 +13,12 @@ protector.spawn = (tonumber(minetest.setting_get("protector_pvp_spawn")) or 0)
 
 protector.luxury_centers = {statspawn} -- simply add points here, for example { spawn, {x=0,y=100,z=0} }
 protector.luxury_radius = 75; -- outside this radius around luxury centers players can place protectors normally without worrying about upgrading
--- outside 2x this radius players can spam protectors with no extra cost
+-- outside 2x this radius players can spam protectors with lower extra cost
 protector.luxury_border_cost = 4; -- protector placement cost at luxury radius
 protector.luxury_center_cost = 100; -- cost at luxury center
 protector.maxcount = 10; -- allowed count in a group before update cost required
 protector.maxcount_price = 0.5; -- extra costs parameter for placing protectors
+protector.discount = {}; -- table of discouns, basically when you dig protector you get cost back - temporary!
 
 
 protector.get_member_list = function(meta)
@@ -318,7 +319,7 @@ minetest.register_node("protector:protect", {
 		local cost = 0;
 		
 		if luxury_dist<protector.luxury_radius then -- extra cost because too close to luxury center
-			cost =  math.pow(luxury_dist/protector.luxury_radius,2); -- this is 0 at center and 1 at borders of luxury,1/2 at halfway
+			cost =  math.pow(luxury_dist/protector.luxury_radius,2); -- this is 0 at center and 1 at borders of luxury,1/4 at halfway
 			cost = protector.luxury_border_cost/(cost+1/protector.luxury_center_cost); 
 			cost = cost + math.ceil(cost);
 		end
@@ -330,6 +331,8 @@ minetest.register_node("protector:protect", {
 				cost = cost + math.pow(count-protector.maxcount+1)*protector.maxcount_price;
 			end
 		end
+		
+		
 		
 		cost = math.ceil(cost);
 		meta:set_int("cost",cost);
@@ -387,6 +390,16 @@ minetest.register_node("protector:protect", {
 	can_dig = function(pos, player)
 		local meta = minetest.get_meta(pos);
 		local candig = (meta:get_int("upgrade") == 1);
+		local name = player:get_player_name();
+		if not protector.discount[name] then protector.discount[name] = 0 end
+		if meta:get_string("owner") == name then 
+			local cost = meta:get_int("cost");
+			if cost>0 then
+				protector.discount[name] = protector.discount[name] +cost;
+				minetest.chat_send_player(name," Protector's upgrade value can be used for discount when upgrading protectors, current credits are ".. protector.discount[name] );
+			end
+		end
+		
 		if candig then 
 			local inv = player:get_inventory();
 			inv:add_item("main", ItemStack("protector:protect"));
@@ -427,18 +440,29 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		local pos = minetest.string_to_pos(pos_s)
 		local meta = minetest.get_meta(pos)
 		local cost = math.floor(meta:get_int("cost"));
+		local name = player:get_player_name();
 		
+		if not protector.discount[name] then protector.discount[name] = 0 end
+		local cost1 = math.max(cost - protector.discount[name],0);
+		
+		if cost1<cost then 
+			minetest.chat_send_player(player:get_player_name(), "PROTECTOR: cost with discount " .. cost1 .. ". Current discount is " .. protector.discount[name]);
+		end
+				
 		--check player inventory for mese
 		local inv = player:get_inventory();
-		if not inv:contains_item("main", ItemStack("default:mese_crystal "..cost)) then 
-			minetest.chat_send_player(player:get_player_name(),"PROTECTOR: you need at least " .. cost .. " mese for upgrade ");
+		if not inv:contains_item("main", ItemStack("default:mese_crystal "..cost1)) then 
+			minetest.chat_send_player(player:get_player_name(),"PROTECTOR: you need at least " .. cost1 .. " mese for upgrade ");
 			return 
 		end
-		inv:remove_item("main", ItemStack("default:mese_crystal "..cost));
-		
+
+		protector.discount[name]=protector.discount[name]-(cost-cost1);
+		inv:remove_item("main", ItemStack("default:mese_crystal "..cost1));
 		
 		meta:set_string("owner", player:get_player_name() or "");
 		meta:set_int("upgrade",0);
+		
+		
 		meta:set_string("placer","");
 		local time = os.date("*t");
 		meta:set_string("infotext", "Protection (upgraded by ".. meta:get_string("owner").." at ".. time.month .. "/" .. time.day .. ", " ..time.hour.. ":".. time.min ..":" .. time.sec..")");
@@ -874,16 +898,16 @@ if minetest.setting_getbool("enable_pvp") and protector.pvp then
 				return true
 			end
 
-			local hitter_protected = minetest.is_protected(pos, hitter:get_player_name());
-			local player_protected = minetest.is_protected(pos, player:get_player_name());
+			local hitter_can_build =  not minetest.is_protected(pos, hitter:get_player_name());
+			local player_can_build = not minetest.is_protected(pos, player:get_player_name());
 			
-			--can hurt: not hitter OR (hitter AND player)
-			--can not hurt: hitter AND (not hitter or not player)
+			--can hurt: hitter_can_build OR (NOT hitter_can_build AND NOT player_can_build)
 			
-			if hitter_protected and ((not hitter_protected) or (not player_protected) )then -- attacker can hurt player where he can build or if both cant build
-				return true
+			
+			if hitter_can_build or ((not player_can_build) and (not hitter_can_build)) then -- attacker can hurt player where he can build or if both cant build
+				return false -- can hurt
 			else
-				return false
+				return true
 			end
 
 		end)
