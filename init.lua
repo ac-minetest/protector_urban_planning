@@ -8,6 +8,7 @@ protector.mod = "redo"
 protector.radius = (tonumber(minetest.setting_get("protector_radius")) or 3)
 protector.pvp = true -- minetest.setting_getbool("protector_pvp")
 protector.spawn = (tonumber(minetest.setting_get("protector_pvp_spawn")) or 0)
+protector.version = "11/08/2015";
 
 -- luxury settings
 
@@ -62,7 +63,7 @@ protector.generate_formspec = function(meta)
 
 	local formspec = "size[8,7]"
 		..default.gui_bg..default.gui_bg_img..default.gui_slots
-		.."label[2.5,0;-- Protector interface --]"
+		.."label[2.5,0;-- Protector interface, mod version " .. protector.version .. "  --]"
 		.."label[0,1;PUNCH node to show protected area or USE for area check]"
 		.."label[0,2;Members: (type player name then press Enter to add)]"
 
@@ -138,7 +139,7 @@ protector.can_dig = function(r, pos, digger, onlyowner, infolevel)
 					minetest.chat_send_player(digger,
 					"This area is owned by " .. owner .. ".")
 					minetest.chat_send_player(digger,
-					"Protection located at: " .. minetest.pos_to_string(pos) .. ", upgrade price " .. meta:get_int("cost"))
+					"Protection located at: " .. minetest.pos_to_string(pos) .. ", upgrade price was " .. meta:get_int("cost") .. ", protector count is " .. meta:get_int("count"))
 					if members ~= "" then
 						minetest.chat_send_player(digger,
 						"Members: " .. members .. ".")
@@ -153,7 +154,7 @@ protector.can_dig = function(r, pos, digger, onlyowner, infolevel)
 			minetest.chat_send_player(digger,
 			"This area is owned by " .. owner .. ".")
 			minetest.chat_send_player(digger,
-			"Protection located at: " .. minetest.pos_to_string(pos) .. ", upgrade price " .. meta:get_int("cost"))
+			"Protection located at: " .. minetest.pos_to_string(pos) .. ", upgrade price was " .. meta:get_int("cost") .. ", protector count is " .. meta:get_int("count"))
 			if members ~= "" then
 				minetest.chat_send_player(digger,
 				"Members: " .. members .. ".")
@@ -257,15 +258,16 @@ function protector.count(pos, mode)
 		return;
 	end
 	
-
+	
 	maxcount = 0; count = 0; -- find maximum nearby count 
+	local maxpos = {x=pos.x,y=pos.y,z=pos.z}; -- position of protector with maxcount
 	for _, p in ipairs(positions) do
 		meta = minetest.get_meta(p)
 		count = meta:get_int("count");
-		if count>maxcount then maxcount = count end
+		if count>maxcount then maxcount = count; maxpos.x=p.x;maxpos.y=p.y; maxpos.z=p.z; end
 	end
 	
-	if mode == 0 then return maxcount end -- just return the count
+	if mode == 0 then return maxcount,maxpos end -- just return the count and position of protector with maxcount
 	
 	--update counts, mode = 1
 	maxcount = maxcount + 1;
@@ -303,13 +305,15 @@ minetest.register_node("protector:protect", {
 	after_place_node = function(pos, placer) -- rnd
 		local meta = minetest.get_meta(pos)
 		
-		local count = protector.count(pos, 1); -- upgrade counts after adding protector
+		local count,maxpos;
+		count = protector.count(pos, 0); -- just read the counts
 		local luxury_dist = protector.check_luxury(pos);
 
 		if luxury_dist>=protector.luxury_radius and count< protector.maxcount then -- normal placement outside luxury radius or below maxcount
 			meta:set_string("owner", placer:get_player_name() or ""); 
 			local time = os.date("*t");
 			meta:set_string("infotext", "Protection (placed by ".. meta:get_string("owner").." at ".. time.month .. "/" .. time.day .. ", " ..time.hour.. ":".. time.min ..":" .. time.sec..")");
+			protector.count(pos, 1); -- update counts of nearby protectors after successful "upgrade"
 			return
 		end
 	
@@ -332,13 +336,12 @@ minetest.register_node("protector:protect", {
 			end
 		end
 		
-		
-		
 		cost = math.ceil(cost);
 		meta:set_int("cost",cost);
 
 		meta:set_string("infotext", "Protection (placed by ".. meta:get_string("placer") .. ". Please rightclick to upgrade with cost ".. cost .." or dig it. ");
-		meta:set_int("upgrade",1);meta:set_int("place_time", minetest.get_gametime());
+		meta:set_int("upgrade",1); -- indicates protector is not yet upgraded
+		meta:set_int("place_time", minetest.get_gametime());
 		meta:set_string("members", "")
 		return
 	end,
@@ -350,18 +353,48 @@ minetest.register_node("protector:protect", {
 
 	on_rightclick = function(pos, node, clicker, itemstack) -- rnd
 		local meta = minetest.get_meta(pos)
+		local name = clicker:get_player_name();
+		local permitgiver = meta:get_string("permitgiver");
 		
-		if clicker:get_player_name() == meta:get_string("placer") then -- upgrade to full protector
+		if name == permitgiver then
+			local cost = meta:get_int("cost");
+			minetest.chat_send_player(name, "PROTECTOR: you have just given permission to upgrade this protector for free. Upgrade costs were " .. cost);
+			meta:set_string("infotext", name .. " has given permission to upgrade with cost 0");
+			meta:set_string("permitgiver","");
+			meta:set_int("cost",0);
+			return
+		end
 		
+		
+		if name == meta:get_string("placer") then -- upgrade to full protector
+			
+			local count,maxpos;
+			count,maxpos = protector.count(pos, 0); -- just read the counts and position of protector with max count
+			local maxname = minetest.get_meta(maxpos):get_string("owner");
+			local permittext = "";
+			if name~=maxname then 
+				if maxname == "" then
+					permittext = "\n\nThere is detector with count " .. count .. " without owner at "..maxpos.x .. " " .. maxpos.y .. " " .. maxpos.z;
+				else
+					permittext = "\n\nYou can also try to get the owner of protector with count ".. count ..  " (his name is " .. maxname .. ") located at "..
+					" "..maxpos.x .. " " .. maxpos.y .. " " .. maxpos.z .. " to upgrade protector for you by rightclicking it. ";
+				end
+				meta:set_string("permitgiver", maxname);
+				
+			else
+				meta:set_string("permitgiver","");
+			end
+			
+			
 			--protector.check_luxury(pos)>=protector.luxury_radius
 			local cost = meta:get_int("cost");
 			
 			local text = "You are either trying to build close to luxury center or there are too many nearby protectors."..
 			"You will need to upgrade protector to be usable. "..
 			"\n\n Make sure you have " .. cost .. " mese in your inventory. "..
-			"If price is too high dig protector, find a spot farther away and try again. "..
+			"If price is too high dig protector, find a spot farther away and try again. ".. permittext ..
 			"\n\nADVICE: try to place protector at least 15 blocks away from large groups of protectors to keep update cost low.";
-			
+
 			local formspec = "size[4.5,5]"
 			..default.gui_bg..default.gui_bg_img..default.gui_slots..
 			"textarea[0,0;5.,5;help;-- Protector upgrade --;".. text .. "]"..
@@ -402,7 +435,6 @@ minetest.register_node("protector:protect", {
 					return false;
 				end
 			end
-			
 		end
 		
 		if meta:get_string("owner") == name then 
@@ -414,19 +446,18 @@ minetest.register_node("protector:protect", {
 			end
 		end
 		
-		if candig then -- dig it if it can be digged
+		if candig then -- dig it if its not upgraded
 			local inv = player:get_inventory();
 			inv:add_item("main", ItemStack("protector:protect"));
 			minetest.set_node(pos,{name = "air"});
-			protector.count(pos,2); -- update counts after removal
+			
 			return false
 		end
+		
+		protector.count(pos,2); -- update counts after removal of upgraded protector only
 		return protector.can_dig(1, pos, player:get_player_name(), true, 1)  
 	end,
-	
-	after_dig_node = function(pos, oldnode, oldmetadata, digger)
-		protector.count(pos,2); -- update counts after removal
-	end,
+
 })
 
 minetest.register_craft({
@@ -449,40 +480,42 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	
 	if string.sub(formname, 0, string.len("protector:upgrade_")) == "protector:upgrade_" then
 	
-		if fields.upgrade_protector ~= "UPGRADE" then return end
-		local pos_s = string.sub(formname, string.len("protector:upgrade_") + 1)
-		local pos = minetest.string_to_pos(pos_s)
-		local meta = minetest.get_meta(pos)
-		local cost = math.floor(meta:get_int("cost"));
-		local name = player:get_player_name();
+		if fields.upgrade_protector == "UPGRADE" then 
 		
-		if not protector.discount[name] then protector.discount[name] = 0 end
-		local cost1 = math.max(cost - protector.discount[name],0);
-		
-		if cost1<cost then 
-			minetest.chat_send_player(player:get_player_name(), "PROTECTOR: cost with discount " .. cost1 .. ". Current discount is " .. protector.discount[name]);
-		end
-				
-		--check player inventory for mese
-		local inv = player:get_inventory();
-		if not inv:contains_item("main", ItemStack("default:mese_crystal "..cost1)) then 
-			minetest.chat_send_player(player:get_player_name(),"PROTECTOR: you need at least " .. cost1 .. " mese for upgrade ");
-			return 
-		end
+			local pos_s = string.sub(formname, string.len("protector:upgrade_") + 1)
+			local pos = minetest.string_to_pos(pos_s)
+			local meta = minetest.get_meta(pos)
+			local cost = math.floor(meta:get_int("cost"));
+			local name = player:get_player_name();
+			
+			if not protector.discount[name] then protector.discount[name] = 0 end
+			local cost1 = math.max(cost - protector.discount[name],0);
+			
+			if cost1<cost then 
+				minetest.chat_send_player(player:get_player_name(), "PROTECTOR: cost with discount " .. cost1 .. ". Current discount is " .. protector.discount[name]);
+			end
+					
+			--check player inventory for mese
+			local inv = player:get_inventory();
+			if not inv:contains_item("main", ItemStack("default:mese_crystal "..cost1)) then 
+				minetest.chat_send_player(player:get_player_name(),"PROTECTOR: you need at least " .. cost1 .. " mese for upgrade ");
+				return 
+			end
 
-		protector.discount[name]=protector.discount[name]-(cost-cost1);
-		inv:remove_item("main", ItemStack("default:mese_crystal "..cost1));
-		
-		meta:set_string("owner", player:get_player_name() or "");
-		meta:set_int("upgrade",0);
-		
-		
-		meta:set_string("placer","");
-		local time = os.date("*t");
-		meta:set_string("infotext", "Protection (upgraded by ".. meta:get_string("owner").." at ".. time.month .. "/" .. time.day .. ", " ..time.hour.. ":".. time.min ..":" .. time.sec..")");
-		minetest.chat_send_player(player:get_player_name(),"PROTECTOR: successfuly upgraded");
-		
-		return
+			protector.discount[name]=protector.discount[name]-(cost-cost1);
+			inv:remove_item("main", ItemStack("default:mese_crystal "..cost1));
+			
+			meta:set_string("owner", player:get_player_name() or "");
+			meta:set_int("upgrade",0); -- protector is now upgraded
+			protector.count(pos, 1); -- update counts of nearby protectors after successful upgrade
+			
+			meta:set_string("placer","");
+			local time = os.date("*t");
+			meta:set_string("infotext", "Protection (upgraded by ".. meta:get_string("owner").." at ".. time.month .. "/" .. time.day .. ", " ..time.hour.. ":".. time.min ..":" .. time.sec..")");
+			minetest.chat_send_player(player:get_player_name(),"PROTECTOR: successfuly upgraded");
+			
+			return
+		end
 	end
 	
 	
