@@ -247,6 +247,15 @@ function protector.count(pos, mode)
 
 	local meta, p, maxcount, count -- protector count in the neighborhood
 	
+	if mode == 3 then -- manual reset counts to 0 by admin
+		for _, p in ipairs(positions) do
+			meta = minetest.get_meta(p)
+			meta:set_int("count", 0)
+		end
+		return;
+	end
+	
+	
 	if mode == 2 then -- reduce neighbor counts since protector is removed
 		for _, p in ipairs(positions) do
 			meta = minetest.get_meta(p)
@@ -967,3 +976,16 @@ else
 end
 
 print ("[MOD] Protector Redo loaded")
+
+
+
+minetest.register_chatcommand("resetprotect", {
+    description = "Resets protector count in neighborhood to 0 to reduce costs to default.",
+    privs = {privs=true},
+    func = function(name)
+        local player = minetest.get_player_by_name(name)
+        local pos = player:getpos();
+		protector.count(pos, 3);
+		minetest.chat_send_player(player:get_player_name(),"PROTECTOR: counts in neighborhood ( 15 blocks around ) reset to 0.");
+    end,
+})
