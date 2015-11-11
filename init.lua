@@ -8,7 +8,7 @@ protector.mod = "redo"
 protector.radius = (tonumber(minetest.setting_get("protector_radius")) or 3)
 protector.pvp = true -- minetest.setting_getbool("protector_pvp")
 protector.spawn = (tonumber(minetest.setting_get("protector_pvp_spawn")) or 0)
-protector.version = "11/09/2015";
+protector.version = "11/11/2015";
 
 -- luxury settings
 
