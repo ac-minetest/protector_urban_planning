@@ -18,7 +18,7 @@ protector.luxury_radius = 75; -- outside this radius around luxury centers playe
 protector.luxury_border_cost = 4; -- protector placement cost at luxury radius
 protector.luxury_center_cost = 100; -- cost at luxury center
 protector.maxcount = 10; -- allowed count in a group before update cost required
-protector.maxcount_price = 0.5; -- extra costs parameter for placing protectors
+protector.maxcount_price = 1; -- extra costs parameter for placing protectors
 protector.discount = {}; -- table of discouns, basically when you dig protector you get cost back - temporary!
 
 
