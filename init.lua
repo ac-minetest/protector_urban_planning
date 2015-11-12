@@ -61,11 +61,16 @@ end
 
 protector.generate_formspec = function(meta)
 
+	local kill = meta:get_int("kill");
+	local warn = meta:get_int("warn");
+	
 	local formspec = "size[8,7]"
 		..default.gui_bg..default.gui_bg_img..default.gui_slots
 		.."label[2.5,0;-- Protector interface, mod version " .. protector.version .. "  --]"
-		.."label[0,1;PUNCH node to show protected area or USE for area check]"
-		.."label[0,2;Members: (type player name then press Enter to add)]"
+		.."label[0,0.5;PUNCH node to show protected area or USE for area check]"
+		.."label[0,1;warn] label[1,1;kill] label[2,1.5; Here you can choose what to do with intruders]"
+		.."button[0,1.25;1,1;warn;"..warn.."] button[1,1.25;1,1;kill;"..kill.."]"
+		.."label[0,2.25;Members: (type player name then press Enter to add)]"
 
 	local members = protector.get_member_list(meta)
 	local npp = 12
@@ -135,6 +140,20 @@ protector.can_dig = function(r, pos, digger, onlyowner, infolevel)
 				if infolevel == 1 then
 					minetest.chat_send_player(digger,
 					"This area is owned by " .. owner .. " !")
+					
+					local warn = meta:get_int("warn");local kill = meta:get_int("kill");
+					local player = minetest.get_player_by_name(digger);
+					if kill==1 then 
+						player:set_hp(0); 
+						minetest.chat_send_player(digger, "PROTECTOR: You died inside protected area at " .. minetest.pos_to_string(pos) .. ". Next time try not to dig or hit players.");
+					return false end
+					if warn==1 then 
+						local form = "size [2,2] textarea[0,0;2.7,2;help;WARNING;This area belongs to " .. meta:get_string("owner") .."]" ..
+						"button_exit[0.5,1.5;1.5,1;close;Close]"
+						minetest.show_formspec(digger, "protector_warn", form)
+						return false
+					end
+					
 				elseif infolevel == 2 then
 					minetest.chat_send_player(digger,
 					"This area is owned by " .. owner .. ".")
@@ -183,11 +202,6 @@ protector.old_is_protected = minetest.is_protected
 function minetest.is_protected(pos, digger)
 
 	if not protector.can_dig(protector.radius, pos, digger, false, 1) then
-
-		-- hurt player here if required
-		--player = minetest.get_player_by_name(digger)
-		--player:set_hp(player:get_hp() - 2)
-
 		return true
 	end
 
@@ -566,6 +580,14 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 			if string.sub(field, 0, string.len("protector_del_member_")) == "protector_del_member_" then
 				protector.del_member(meta, string.sub(field,string.len("protector_del_member_") + 1))
 			end
+		end
+		
+		if fields.warn then
+			meta:set_int("warn", 1-meta:get_int("warn"))
+		end
+
+		if fields.kill then
+			meta:set_int("kill", 1-meta:get_int("kill"))
 		end
 		
 		if not fields.close_me then
