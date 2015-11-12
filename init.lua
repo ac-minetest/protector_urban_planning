@@ -444,7 +444,7 @@ minetest.register_node("protector:protect", {
 	can_dig = function(pos, player)
 		local meta = minetest.get_meta(pos);
 	
-		local candig = (meta:get_int("upgrade") == 1);
+		local candig = (meta:get_int("upgrade") == 1); -- protector not yet upgraded?
 		local name = player:get_player_name();
 		if candig then 
 			if name~=meta:get_string("placer") then -- non placer can only dig after 5 minutes passed
@@ -457,7 +457,8 @@ minetest.register_node("protector:protect", {
 			end
 		end
 		
-		if meta:get_string("owner") == name then 
+		local owner = meta:get_string("owner");
+		if owner == name then 
 			if not protector.discount[name] then protector.discount[name] = 0 end
 			local cost = meta:get_int("cost");
 			if cost>0 then
@@ -474,7 +475,7 @@ minetest.register_node("protector:protect", {
 			return false
 		end
 		
-		protector.count(pos,2); -- update counts after removal of upgraded protector only
+		if owner~="" then protector.count(pos,2); end-- update counts after removal of protector with real owner only
 		return protector.can_dig(1, pos, player:get_player_name(), true, 1)  
 	end,
 
