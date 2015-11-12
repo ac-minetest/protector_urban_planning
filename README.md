@@ -28,6 +28,6 @@ detailed features:
 of future upgrades.
 - building permissions: owner of protector with most counts in the area can upgrade other player protector by right click for free.
   This way even poorer players place 1 protector in expensive areas if allowed 
-- bug fixes: now digging protector with no owner no longer decreases protector count
+- bug fixes: now digging protector with no owner no longer decreases protector counts
 
 INSTALLATION: extract into directory called "protector" inside minetest mod directory

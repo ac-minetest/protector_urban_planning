@@ -260,7 +260,7 @@ function protector.count(pos, mode)
 		for _, p in ipairs(positions) do
 			meta = minetest.get_meta(p)
 			
-			count = meta:get_int("count")-1;
+			count = meta:get_int("count")-1;if count<0 then count = 0 end
 			meta:set_int("count", count)
 		end
 	
