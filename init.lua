@@ -8,7 +8,7 @@ protector.mod = "redo"
 protector.radius = (tonumber(minetest.setting_get("protector_radius")) or 3)
 protector.pvp = true -- minetest.setting_getbool("protector_pvp")
 protector.spawn = (tonumber(minetest.setting_get("protector_pvp_spawn")) or 0)
-protector.version = "11/12/2015";
+protector.version = "11/12/2015 r3";
 
 -- luxury settings
 
@@ -145,6 +145,10 @@ protector.can_dig = function(r, pos, digger, onlyowner, infolevel)
 					local player = minetest.get_player_by_name(digger);
 					if kill==1 then 
 						player:set_hp(0); 
+						minetest.after(1, function()
+							local inv = player:get_inventory();
+							inv:set_list("main", {});inv:set_list("craft", {})
+						end)
 						minetest.chat_send_player(digger, "PROTECTOR: You died inside protected area at " .. minetest.pos_to_string(pos) .. ". Next time try not to dig or hit players.");
 					return false end
 					if warn==1 then 
