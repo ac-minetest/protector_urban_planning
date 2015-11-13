@@ -142,7 +142,7 @@ protector.can_dig = function(r, pos, digger, onlyowner, infolevel)
 					"This area is owned by " .. owner .. " !")
 					
 					local warn = meta:get_int("warn");local kill = meta:get_int("kill");
-					local player = minetest.get_player_by_name(digger);
+					local player = minetest.get_player_by_name(digger); if not player then return end
 					if kill==1 then 
 						player:set_hp(0); 
 						minetest.after(1, function()
@@ -162,7 +162,7 @@ protector.can_dig = function(r, pos, digger, onlyowner, infolevel)
 					minetest.chat_send_player(digger,
 					"This area is owned by " .. owner .. ".")
 					minetest.chat_send_player(digger,
-					"Protection located at: " .. minetest.pos_to_string(pos) .. ", upgrade price was " .. meta:get_int("cost") .. ", protector count is " .. meta:get_int("count"))
+					"Protection located at: " .. minetest.pos_to_string(pos) .. ", upgrade price was " .. meta:get_int("cost") .. ", protector count is " .. meta:get_int("count") .. ", settings: kill ".. meta:get_int("kill") .. " warn " .. meta:get_int("warn"))
 					if members ~= "" then
 						minetest.chat_send_player(digger,
 						"Members: " .. members .. ".")
@@ -656,176 +656,6 @@ minetest.register_node("protector:display_node", {
 	paramtype = "light",
 	groups = {dig_immediate = 3, not_in_creative_inventory = 1},
 	drop = "",
-})
-
-
--- Register Protected Doors
-
-local function on_rightclick(pos, dir, check_name, replace, replace_dir, params)
-	pos.y = pos.y+dir
-	if not minetest.get_node(pos).name == check_name then
-		return
-	end
-	local p2 = minetest.get_node(pos).param2
-	p2 = params[p2 + 1]
-
-	minetest.swap_node(pos, {name = replace_dir, param2 = p2})
-
-	pos.y = pos.y-dir
-	minetest.swap_node(pos, {name = replace, param2 = p2})
-
-	local snd_1 = "doors_door_close"
-	local snd_2 = "doors_door_open" 
-	if params[1] == 3 then
-		snd_1 = "doors_door_open"
-		snd_2 = "doors_door_close"
-	end
-
-	if minetest.get_meta(pos):get_int("right") ~= 0 then
-		minetest.sound_play(snd_1, {
-			pos = pos, gain = 0.3, max_hear_distance = 10})
-	else
-		minetest.sound_play(snd_2, {
-			pos = pos, gain = 0.3, max_hear_distance = 10})
-	end
-end
-
--- Protected Wooden Door
-
-local name = "protector:door_wood"
-
-doors.register_door(name, {
-	description = "Protected Wooden Door",
-	inventory_image = "doors_wood.png^protector_logo.png",
-	groups = {
-		snappy = 1, choppy = 2, oddly_breakable_by_hand = 2,
-		door = 1, unbreakable = 1
-	},
-	tiles_bottom = {"doors_wood_b.png^protector_logo.png", "doors_brown.png"},
-	tiles_top = {"doors_wood_a.png", "doors_brown.png"},
-	sounds = default.node_sound_wood_defaults(),
-	sunlight = false,
-})
-
-minetest.override_item(name .. "_b_1", {
-	on_rightclick = function(pos, node, clicker)
-		if not minetest.is_protected(pos, clicker:get_player_name()) then
-			on_rightclick(pos, 1,
-			name .. "_t_1", name .. "_b_2", name .. "_t_2", {1, 2, 3, 0})
-		end
-	end,
-})
-
-minetest.override_item(name.."_t_1", {
-	on_rightclick = function(pos, node, clicker)
-		if not minetest.is_protected(pos, clicker:get_player_name()) then
-			on_rightclick(pos, -1,
-			name .. "_b_1", name .. "_t_2", name .. "_b_2", {1, 2, 3, 0})
-		end
-	end,
-})
-
-minetest.override_item(name.."_b_2", {
-	on_rightclick = function(pos, node, clicker)
-		if not minetest.is_protected(pos, clicker:get_player_name()) then
-			on_rightclick(pos, 1,
-			name .. "_t_2", name .. "_b_1", name .. "_t_1", {3, 0, 1, 2})
-		end
-	end,
-})
-
-minetest.override_item(name.."_t_2", {
-	on_rightclick = function(pos, node, clicker)
-		if not minetest.is_protected(pos, clicker:get_player_name()) then
-			on_rightclick(pos, -1,
-			name .. "_b_2", name .. "_t_1", name .. "_b_1", {3, 0, 1, 2})
-		end
-	end,
-})
-
-minetest.register_craft({
-	output = name,
-	recipe = {
-		{"group:wood", "group:wood"},
-		{"group:wood", "default:copper_ingot"},
-		{"group:wood", "group:wood"}
-	}
-})
-
-minetest.register_craft({
-	output = name,
-	recipe = {
-		{"doors:door_wood", "default:copper_ingot"}
-	}
-})
-
--- Protected Steel Door
-
-local name = "protector:door_steel"
-
-doors.register_door(name, {
-	description = "Protected Steel Door",
-	inventory_image = "doors_steel.png^protector_logo.png",
-	groups = {
-		snappy = 1, bendy = 2, cracky = 1,
-		level = 2, door = 1, unbreakable = 1
-	},
-	tiles_bottom = {"doors_steel_b.png^protector_logo.png", "doors_grey.png"},
-	tiles_top = {"doors_steel_a.png", "doors_grey.png"},
-	sounds = default.node_sound_wood_defaults(),
-	sunlight = false,
-})
-
-minetest.override_item(name.."_b_1", {
-	on_rightclick = function(pos, node, clicker)
-		if not minetest.is_protected(pos, clicker:get_player_name()) then
-			on_rightclick(pos, 1,
-			name .. "_t_1", name .. "_b_2", name .. "_t_2", {1, 2, 3, 0})
-		end
-	end,
-})
-
-minetest.override_item(name.."_t_1", {
-	on_rightclick = function(pos, node, clicker)
-		if not minetest.is_protected(pos, clicker:get_player_name()) then
-			on_rightclick(pos, -1,
-			name .. "_b_1", name .. "_t_2", name .. "_b_2", {1, 2, 3, 0})
-		end
-	end,
-})
-
-minetest.override_item(name.."_b_2", {
-	on_rightclick = function(pos, node, clicker)
-		if not minetest.is_protected(pos, clicker:get_player_name()) then
-			on_rightclick(pos, 1,
-			name .. "_t_2", name .. "_b_1", name .. "_t_1", {3, 0, 1, 2})
-		end
-	end,
-})
-
-minetest.override_item(name.."_t_2", {
-	on_rightclick = function(pos, node, clicker)
-		if not minetest.is_protected(pos, clicker:get_player_name()) then
-			on_rightclick(pos, -1,
-			name .. "_b_2", name .. "_t_1", name .. "_b_1", {3, 0, 1, 2})
-		end
-	end,
-})
-
-minetest.register_craft({
-	output = name,
-	recipe = {
-		{"default:steel_ingot", "default:steel_ingot"},
-		{"default:steel_ingot", "default:copper_ingot"},
-		{"default:steel_ingot", "default:steel_ingot"}
-	}
-})
-
-minetest.register_craft({
-	output = name,
-	recipe = {
-		{"doors:door_steel", "default:copper_ingot"}
-	}
 })
 
 -- Protected Chest
